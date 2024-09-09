@@ -22,7 +22,7 @@ export class NetworkRepository extends BaseRepository {
   async getAllWithConfigs(): Promise<
     (NetworkRecord & {
       explorers: NetworkExplorerRecord[]
-      rpc?: NetworkRpcRecord
+      rpcs: NetworkRpcRecord[]
     })[]
   > {
     const allNetworks = await this.db
@@ -50,7 +50,7 @@ export class NetworkRepository extends BaseRepository {
       explorers: explorers
         .filter((explorer) => explorer.networkId === network.id)
         .map(toNetworkExplorerRecord),
-      rpc: rpcs.find((rpc) => rpc.networkId === network.id),
+      rpcs: rpcs.filter((rpc) => rpc.networkId === network.id),
     }))
   }
 

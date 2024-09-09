@@ -32,12 +32,7 @@ export async function getNetworksConfig({
 
   logger.info(`Getting networks config...`)
 
-  const networks = await db.network.findMany({
-    include: {
-      rpcs: true,
-      explorer: true,
-    },
-  })
+  const networks = await db.networks.getAllWithConfigs()
 
   const chains = Object.values(viemChains) as viemChains.Chain[]
 
@@ -50,8 +45,8 @@ export async function getNetworksConfig({
         return
       }
 
-      const explorerClient = network.explorer
-        ? instantiateExplorer(network.explorer, {
+      const explorerClient = network.explorers[0]
+        ? instantiateExplorer(network.explorers[0], {
             cache: cache,
             chainId: network.chainId,
           })
