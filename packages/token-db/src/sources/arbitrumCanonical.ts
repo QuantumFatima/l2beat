@@ -1,10 +1,11 @@
-import { assert, Logger } from '@l2beat/backend-tools'
+import { Logger } from '@l2beat/backend-tools'
 
 import { nanoid } from 'nanoid'
 import { getContract, parseAbiItem } from 'viem'
-import { PrismaClient } from '../db/prisma.js'
+import { Database } from '@l2beat/database'
 import { NetworkConfig } from '../utils/getNetworksConfig.js'
 import { notUndefined } from '../utils/notUndefined.js'
+import { assert } from '@l2beat/shared-pure'
 
 export { buildArbitrumCanonicalSource }
 
@@ -17,7 +18,7 @@ const abi = [
 
 type Dependencies = {
   logger: Logger
-  db: PrismaClient
+  db: Database
   networksConfig: NetworkConfig[]
 }
 
@@ -36,7 +37,7 @@ function buildArbitrumCanonicalSource({
     )?.publicClient
     assert(arbitrumClient, 'Arbitrum One client not found')
 
-    const arbitrumNetwork = await db.network.findFirst({
+    const arbitrumNetwork = await db.networks.getByName({
       select: { id: true },
       where: {
         name: 'Arbitrum One',

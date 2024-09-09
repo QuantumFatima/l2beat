@@ -1,7 +1,7 @@
 import { BaseRepository } from '../../BaseRepository'
 import { TokenRecord, toRecord, toRow } from './entity'
 import { joinDeployment, joinNetwork, joinTokenMeta } from './join'
-import { selectToken } from './select'
+import { selectToken, selectTokenWithPrefix } from './select'
 
 export class TokenRepository extends BaseRepository {
   async upsertMany(records: TokenRecord[]): Promise<number> {
@@ -30,6 +30,18 @@ export class TokenRepository extends BaseRepository {
       .innerJoin(...joinNetwork)
       .select(selectToken)
       .where('Network.chainId', '=', chainId)
+      .execute()
+    return rows.map(toRecord)
+  }
+
+  async getByChainIdWithoutDeployment(chainId: number): Promise<TokenRecord[]> {
+    const rows = await this.db
+      .selectFrom('Token')
+      .innerJoin(...joinNetwork)
+      .leftJoin(...joinDeployment)
+      .select(selectTokenWithPrefix('Token'))
+      .where('Network.chainId', '=', chainId)
+      .where('Deployment.id', 'is', null)
       .execute()
     return rows.map(toRecord)
   }

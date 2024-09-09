@@ -1,9 +1,9 @@
-import { ExplorerType, NetworkExplorer } from '@prisma/client'
 import {
   buildCachedEtherscanExplorer,
   buildEtherscanExplorer,
 } from './etherscan.js'
 import { Cache } from '../cache/types.js'
+import { ExplorerType, NetworkExplorerRecord } from '@l2beat/database'
 
 export { instantiateExplorer }
 
@@ -12,7 +12,7 @@ export type { NetworkExplorerClient }
 type NetworkExplorerClient = ReturnType<typeof buildEtherscanExplorer>
 
 function instantiateExplorer(
-  explorer: NetworkExplorer,
+  explorer: NetworkExplorerRecord,
   cacheStack?: { cache: Cache; chainId: number },
 ) {
   switch (explorer.type) {

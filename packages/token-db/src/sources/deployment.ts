@@ -1,17 +1,16 @@
 import { Logger } from '@l2beat/backend-tools'
-import { Token } from '@prisma/client'
 import { nanoid } from 'nanoid'
 import { setTimeout } from 'timers/promises'
 import { PublicClient } from 'viem'
 import { upsertTokenMeta } from '../db/helpers.js'
-import { PrismaClient } from '../db/prisma.js'
+import { Database, TokenRecord } from '@l2beat/database'
 import { NetworkExplorerClient } from '../utils/explorers/index.js'
 import { NetworkConfig, WithExplorer } from '../utils/getNetworksConfig.js'
 import { DeploymentUpdatedQueue } from '../utils/queue/wrap.js'
 
 type Dependencies = {
   logger: Logger
-  db: PrismaClient
+  db: Database
   networkConfig: WithExplorer<NetworkConfig>
   queue: DeploymentUpdatedQueue
 }
@@ -75,7 +74,7 @@ function getDeploymentDataWithRetries(
   publicClient: PublicClient,
   logger: Logger,
 ) {
-  return async function (token: Token) {
+  return async function (token: TokenRecord) {
     while (true) {
       try {
         return await getDeploymentData(explorer, publicClient)(token)

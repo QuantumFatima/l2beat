@@ -1,16 +1,17 @@
-import { assert, Logger } from '@l2beat/backend-tools'
+import { Logger } from '@l2beat/backend-tools'
 import { z } from 'zod'
 
 import { upsertManyTokensWithMeta } from '../db/helpers.js'
-import { PrismaClient } from '../db/prisma.js'
+import { Database } from '@l2beat/database'
 import { zodFetch } from '../utils/zodFetch.js'
 import { TokenUpdateQueue } from '../utils/queue/wrap.js'
+import { assert } from '@l2beat/shared-pure'
 
 export { buildCoingeckoSource }
 
 type Dependencies = {
   logger: Logger
-  db: PrismaClient
+  db: Database
   queue: TokenUpdateQueue
 }
 

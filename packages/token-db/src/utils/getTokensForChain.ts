@@ -1,8 +1,8 @@
-import { PrismaClient } from '../db/prisma.js'
+import { Database } from '@l2beat/database'
 import { NetworkConfig, WithExplorer } from './getNetworksConfig.js'
 
 type Dependencies = {
-  db: PrismaClient
+  db: Database
   networkConfig: WithExplorer<NetworkConfig>
 }
 
@@ -13,21 +13,11 @@ type Options = {
   flush: boolean
 }
 
-export async function getTokensForChain(
+export function getTokensForChain(
   { db, networkConfig }: Dependencies,
   { flush }: Options = { flush: false },
 ) {
-  const whereClause = flush
-    ? { network: { chainId: networkConfig.chainId } }
-    : {
-        AND: {
-          network: { chainId: networkConfig.chainId },
-          deployment: { is: null },
-        },
-      }
-
-  const tokens = await db.token.findMany({
-    where: whereClause,
-  })
-  return tokens
+  return flush
+    ? db.token.getByChainId(networkConfig.chainId)
+    : db.token.getByChainIdWithoutDeployment(networkConfig.chainId)
 }

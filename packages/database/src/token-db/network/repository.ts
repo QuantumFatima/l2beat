@@ -66,6 +66,16 @@ export class NetworkRepository extends BaseRepository {
     return rows.map(toRecord) as SetRequired<NetworkRecord, 'coingeckoId'>[]
   }
 
+  async findById(id: string): Promise<NetworkRecord | undefined> {
+    const row = await this.db
+      .selectFrom('Network')
+      .select(selectNetwork)
+      .where('Network.id', '=', id)
+      .limit(1)
+      .executeTakeFirst()
+    return row && toRecord(row)
+  }
+
   async upsertMany(networks: NetworkRecord[]): Promise<number> {
     if (networks.length === 0) return 0
 

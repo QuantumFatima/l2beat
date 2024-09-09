@@ -1,8 +1,7 @@
-import { Prisma } from '@prisma/client'
 import { nanoid } from 'nanoid'
 import { Simplify } from 'type-fest'
 import { SourceTagParams, sourceTag } from '../utils/sourceTag.js'
-import { PrismaClient } from './prisma.js'
+import { Database } from '@l2beat/database'
 
 export type UpsertTokenMetaInput = Simplify<
   Omit<Prisma.TokenMetaCreateManyInput, 'id' | 'source'> & {
@@ -11,7 +10,7 @@ export type UpsertTokenMetaInput = Simplify<
 >
 
 export async function upsertTokenMeta(
-  db: PrismaClient,
+  db: Database,
   { tokenId, source, ...meta }: UpsertTokenMetaInput,
 ) {
   const { id: tokenMetaId } = await db.tokenMeta.upsert({
@@ -44,7 +43,7 @@ export type UpsertTokenWithMetaInput = Simplify<
 >
 
 export async function upsertTokenWithMeta(
-  db: PrismaClient,
+  db: Database,
   { networkId, address, source, ...meta }: UpsertTokenWithMetaInput,
 ) {
   const token = { networkId, address }
@@ -86,7 +85,7 @@ export async function upsertTokenWithMeta(
 }
 
 export async function upsertManyTokenMeta(
-  db: PrismaClient,
+  db: Database,
   metas: UpsertTokenMetaInput[],
 ) {
   await db.tokenMeta.upsertMany({
@@ -100,7 +99,7 @@ export async function upsertManyTokenMeta(
 }
 
 export async function upsertManyTokensWithMeta(
-  db: PrismaClient,
+  db: Database,
   tokens: UpsertTokenWithMetaInput[],
 ) {
   await db.token.upsertMany({
