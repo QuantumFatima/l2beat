@@ -36,12 +36,7 @@ function buildZkSyncCanonicalSource({
     )?.publicClient
     assert(zkSyncClient, 'zkSync client not found')
 
-    const zkSyncNetwork = await db.network.findFirst({
-      select: { id: true },
-      where: {
-        name: 'zkSync',
-      },
-    })
+    const zkSyncNetwork = await db.networks.findByName('zkSync')
     assert(zkSyncNetwork, 'zkSync network not found')
 
     const tokens = await db.token.findMany({

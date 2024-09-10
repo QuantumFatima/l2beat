@@ -25,7 +25,7 @@ function buildTokenListSource({ db, url, tag, logger, queue }: Dependencies) {
 
     logger.info('Token list fetched', { count: result.tokens.length })
 
-    const networks = await db.network.findMany()
+    const networks = await db.networks.getAll()
 
     const tokens = result.tokens.flatMap((token) => {
       const chain = networks.find((n) => n.chainId === token.chainId)
@@ -56,7 +56,17 @@ function buildTokenListSource({ db, url, tag, logger, queue }: Dependencies) {
 
     logger.info('Inserting tokens', { count: tokens.length })
 
-    const tokenIds = await upsertManyTokensWithMeta(db, tokens)
+    const tokenIds = await upsertManyTokensWithMeta(
+      db,
+      tokens.map((t) => ({
+        ...t,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        logoUrl: t.logoUrl ?? null,
+        externalId: null,
+        contractName: null,
+      })),
+    )
 
     await Promise.all(tokenIds.map((tokenId) => queue.add(tokenId)))
     logger.info(`Synced ${tokens.length} tokens for token list`)
