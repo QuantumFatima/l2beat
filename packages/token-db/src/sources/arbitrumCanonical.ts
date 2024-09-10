@@ -40,7 +40,7 @@ function buildArbitrumCanonicalSource({
     const arbitrumNetwork = await db.networks.findByName('Arbitrum One')
     assert(arbitrumNetwork, 'Arbitrum One network not found')
 
-    const tokens = await db.token.getByDeploymentTarget({
+    const tokens = await db.token.getByDeploymentTargetAndContractName({
       to: [L2_ERC20_GATEWAY, ARB_RETRYABLE_TX],
       contractName: 'ClonableBeaconProxy',
       networkId: arbitrumNetwork.id,

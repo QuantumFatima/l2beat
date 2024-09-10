@@ -99,20 +99,12 @@ export function buildAxelarConfigSource({ logger, db, queue }: Dependencies) {
       // Upsert bridge escrow (once per network)
       // TODO: move it higher to avoid multiple upserts
       await db.bridgeEscrow.upsert({
-        select: { id: true },
-        where: {
-          networkId_address: {
-            networkId: sourceNetwork.id,
-            address: sourceToken.tokenAddress,
-          },
-        },
-        create: {
-          id: nanoid(),
-          networkId: sourceNetwork.id,
-          address: sourceToken.tokenAddress,
-          externalBridgeId,
-        },
-        update: {},
+        id: nanoid(),
+        networkId: sourceNetwork.id,
+        address: sourceToken.tokenAddress,
+        externalBridgeId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       })
 
       // Upsert the source token and its metadata
@@ -167,16 +159,12 @@ export function buildAxelarConfigSource({ logger, db, queue }: Dependencies) {
 
         // Upsert the bridge entry
         await db.tokenBridge.upsert({
-          where: {
-            targetTokenId,
-          },
-          create: {
-            id: nanoid(),
-            sourceTokenId,
-            targetTokenId,
-            externalBridgeId,
-          },
-          update: {},
+          id: nanoid(),
+          sourceTokenId,
+          targetTokenId,
+          externalBridgeId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         })
       }
     }

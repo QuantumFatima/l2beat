@@ -39,22 +39,9 @@ function buildScrollCanonicalSource({
     const scrollNetwork = await db.networks.findByName('Scroll')
     assert(scrollNetwork, 'Scroll network not found')
 
-    const tokens = await db.token.findMany({
-      where: {
-        deployment: {
-          OR: [
-            {
-              to: {
-                equals: SCROLL_MESSENGER,
-                mode: 'insensitive',
-              },
-            },
-          ],
-        },
-        network: {
-          id: scrollNetwork.id,
-        },
-      },
+    const tokens = await db.token.getByDeploymentTarget({
+      to: [SCROLL_MESSENGER],
+      networkId: scrollNetwork.id,
     })
 
     logger.info('Matching L2 tokens with L1 addresses...')
@@ -69,17 +56,16 @@ function buildScrollCanonicalSource({
         const l1Address = await contract.read
           .counterpart()
           .catch(() => undefined)
-        const l1Token = await db.token.findFirst({
-          where: {
-            network: {
-              name: 'Ethereum',
-            },
-            address: {
-              equals: l1Address,
-              mode: 'insensitive',
-            },
-          },
+
+        if (!l1Address) {
+          return
+        }
+
+        const l1Token = await db.token.findByNetwork({
+          network: 'Ethereum',
+          address: l1Address,
         })
+
         if (!l1Token) {
           return
         }
@@ -91,12 +77,15 @@ function buildScrollCanonicalSource({
       }),
     )
 
-    await db.tokenBridge.upsertMany({
-      data: tokensBridgeToUpsert
-        .filter(notUndefined)
-        .map((t) => ({ id: nanoid(), ...t })),
-      conflictPaths: ['targetTokenId'],
-    })
+    await db.tokenBridge.upsertMany(
+      tokensBridgeToUpsert.filter(notUndefined).map((t) => ({
+        id: nanoid(),
+        ...t,
+        externalBridgeId: null,
+        updatedAt: new Date(),
+        createdAt: new Date(),
+      })),
+    )
 
     logger.info(
       `Synced ${tokensBridgeToUpsert.length} Scroll canonical tokens data`,
