@@ -76,6 +76,18 @@ export class NetworkRepository extends BaseRepository {
     return row && toRecord(row)
   }
 
+  async findByCoingeckoId(
+    coingeckoId: string,
+  ): Promise<NetworkRecord | undefined> {
+    const row = await this.db
+      .selectFrom('Network')
+      .select(selectNetwork)
+      .where('Network.coingeckoId', '=', coingeckoId)
+      .limit(1)
+      .executeTakeFirst()
+    return row && toRecord(row)
+  }
+
   async findByName(name: string): Promise<NetworkRecord | undefined> {
     const row = await this.db
       .selectFrom('Network')

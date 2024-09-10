@@ -36,12 +36,7 @@ function buildScrollCanonicalSource({
     )?.publicClient
     assert(scrollClient, 'Scroll client not found')
 
-    const scrollNetwork = await db.network.findFirst({
-      select: { id: true },
-      where: {
-        name: 'Scroll',
-      },
-    })
+    const scrollNetwork = await db.networks.findByName('Scroll')
     assert(scrollNetwork, 'Scroll network not found')
 
     const tokens = await db.token.findMany({

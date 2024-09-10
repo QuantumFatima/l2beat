@@ -114,6 +114,7 @@ model Stake {
 //   layerZeroV1EndpointAddress String?          @db.Char(42)
 //   bridgeEscrows              BridgeEscrow[]   @relation("network")
 //   canonicalBridgeEscrows     BridgeEscrow[]   @relation("canonicalNetwork")
+//   logoUrl                    String?          @db.VarChar(256)
 //   rpcs                       NetworkRpc[]
 //   explorer                   NetworkExplorer?
 //   tokens                     Token[]

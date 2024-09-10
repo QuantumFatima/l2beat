@@ -61,6 +61,7 @@ export type Network = {
   orbitId: string | null
   wormholeId: string | null
   layerZeroV1EndpointAddress: string | null
+  logoUrl: string | null
   updatedAt: Generated<Timestamp>
   createdAt: Generated<Timestamp>
 }

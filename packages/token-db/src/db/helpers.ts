@@ -1,10 +1,10 @@
 import { nanoid } from 'nanoid'
 import { Simplify } from 'type-fest'
 import { SourceTagParams, sourceTag } from '../utils/sourceTag.js'
-import { Database } from '@l2beat/database'
+import { Database, TokenMetaRecord, TokenRecord } from '@l2beat/database'
 
 export type UpsertTokenMetaInput = Simplify<
-  Omit<Prisma.TokenMetaCreateManyInput, 'id' | 'source'> & {
+  Omit<TokenMetaRecord, 'id' | 'source'> & {
     source: SourceTagParams
   }
 >
@@ -13,31 +13,17 @@ export async function upsertTokenMeta(
   db: Database,
   { tokenId, source, ...meta }: UpsertTokenMetaInput,
 ) {
-  const { id: tokenMetaId } = await db.tokenMeta.upsert({
-    select: { id: true },
-    where: {
-      tokenId_source: {
-        tokenId,
-        source: sourceTag(source),
-      },
-    },
-    create: {
-      id: nanoid(),
-      tokenId,
-      source: sourceTag(source),
-      ...meta,
-    },
-    update: {
-      ...meta,
-    },
+  await db.tokenMeta.upsert({
+    id: nanoid(),
+    tokenId,
+    source: sourceTag(source),
+    ...meta,
   })
-
-  return tokenMetaId
 }
 
 export type UpsertTokenWithMetaInput = Simplify<
-  Omit<Prisma.TokenCreateManyInput, 'id'> &
-    Omit<Prisma.TokenMetaCreateManyInput, 'id' | 'tokenId' | 'source'> & {
+  Omit<TokenRecord, 'id'> &
+    Omit<TokenMetaRecord, 'id' | 'tokenId' | 'source'> & {
       source: SourceTagParams
     }
 >
@@ -48,37 +34,18 @@ export async function upsertTokenWithMeta(
 ) {
   const token = { networkId, address }
 
-  const { id: tokenId } = await db.token.upsert({
-    select: { id: true },
-    where: {
-      networkId_address: {
-        ...token,
-      },
-    },
-    create: {
-      id: nanoid(),
-      ...token,
-    },
-    update: {},
+  const tokenId = await db.token.upsert({
+    id: nanoid(),
+    ...token,
+    updatedAt: new Date(),
+    createdAt: new Date(),
   })
 
-  const { id: tokenMetaId } = await db.tokenMeta.upsert({
-    select: { id: true },
-    where: {
-      tokenId_source: {
-        tokenId,
-        source: sourceTag(source),
-      },
-    },
-    create: {
-      id: nanoid(),
-      tokenId,
-      source: sourceTag(source),
-      ...meta,
-    },
-    update: {
-      ...meta,
-    },
+  const tokenMetaId = await db.tokenMeta.upsert({
+    id: nanoid(),
+    tokenId,
+    source: sourceTag(source),
+    ...meta,
   })
 
   return { tokenId, tokenMetaId }
@@ -88,38 +55,35 @@ export async function upsertManyTokenMeta(
   db: Database,
   metas: UpsertTokenMetaInput[],
 ) {
-  await db.tokenMeta.upsertMany({
-    data: metas.map(({ source, ...meta }) => ({
+  await db.tokenMeta.upsertMany(
+    metas.map(({ source, ...meta }) => ({
       id: nanoid(),
       source: sourceTag(source),
       ...meta,
     })),
-    conflictPaths: ['tokenId', 'source'],
-  })
+  )
 }
 
 export async function upsertManyTokensWithMeta(
   db: Database,
   tokens: UpsertTokenWithMetaInput[],
 ) {
-  await db.token.upsertMany({
-    data: tokens.map((token) => ({
+  await db.token.upsertMany(
+    tokens.map((token) => ({
       id: nanoid(),
       networkId: token.networkId,
       address: token.address,
+      updatedAt: new Date(),
+      createdAt: new Date(),
     })),
-    conflictPaths: ['networkId', 'address'],
-  })
+  )
 
-  const tokenEntities = await db.token.findMany({
-    select: { id: true, networkId: true, address: true },
-    where: {
-      OR: tokens.map((token) => ({
-        networkId: token.networkId,
-        address: token.address,
-      })),
-    },
-  })
+  const tokenEntities = await db.token.getByNetworks(
+    tokens.map((token) => ({
+      networkId: token.networkId,
+      address: token.address,
+    })),
+  )
 
   const tokenIds = Object.fromEntries(
     tokenEntities.map((token) => [
@@ -128,15 +92,14 @@ export async function upsertManyTokensWithMeta(
     ]),
   )
 
-  await db.tokenMeta.upsertMany({
-    data: tokens.map(({ networkId, address, source, ...meta }) => ({
+  await db.tokenMeta.upsertMany(
+    tokens.map(({ networkId, address, source, ...meta }) => ({
       id: nanoid(),
       tokenId: tokenIds[`${networkId}_${address}`] ?? '',
       source: sourceTag(source),
       ...meta,
     })),
-    conflictPaths: ['tokenId', 'source'],
-  })
+  )
 
   return tokenEntities.map((token) => token.id)
 }

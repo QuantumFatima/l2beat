@@ -11,6 +11,7 @@ export interface NetworkRecord {
   orbitId: string | null
   wormholeId: string | null
   layerZeroV1EndpointAddress: string | null
+  logoUrl: string | null
   updatedAt: Date
   createdAt: Date
 }

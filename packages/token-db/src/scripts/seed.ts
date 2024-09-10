@@ -1,4 +1,3 @@
-import { Network, Prisma } from '@prisma/client'
 import intersectionWith from 'lodash/intersectionWith.js'
 import { nanoid } from 'nanoid'
 import {
@@ -22,7 +21,8 @@ import { env } from '../env.js'
 import { isExplorerType } from '../utils/isExplorerType.js'
 import { notUndefined } from '../utils/notUndefined.js'
 import { zodFetch } from '../utils/zodFetch.js'
-import { createPrismaClient } from '../db/prisma.js'
+import { createDatabase, NetworkRecord } from '@l2beat/database'
+import { assert } from '@l2beat/shared-pure'
 
 export const chainsConfig = [
   arbitrum,
@@ -67,8 +67,8 @@ async function seed() {
     ({ chain_identifier }, { id }) => id === chain_identifier,
   )
 
-  await db.network.upsertMany({
-    data: desiredNetworks
+  await db.networks.upsertMany(
+    desiredNetworks
       .filter((n) => n.chain_identifier !== null)
       .map((network) => ({
         id: nanoid(),
@@ -76,14 +76,21 @@ async function seed() {
         name: network.name,
         // biome-ignore lint/style/noNonNullAssertion: checked above
         chainId: network.chain_identifier!,
+        axelarId: null,
+        axelarGatewayAddress: null,
+        orbitId: null,
+        wormholeId: null,
+        layerZeroV1EndpointAddress: null,
+        logoUrl: null,
+        updatedAt: new Date(),
+        createdAt: new Date(),
       })),
-    conflictPaths: ['coingeckoId'],
-  })
+  )
 
-  const allNetworks = await db.network.findMany()
+  const allNetworks = await db.networks.getAll()
 
-  await db.networkRpc.createMany({
-    data: allNetworks
+  await db.networkRpc.insertMany(
+    allNetworks
       .map((network) => {
         let rpcUrl: string | undefined =
           process.env[
@@ -100,12 +107,14 @@ async function seed() {
           id: nanoid(),
           networkId: network.id,
           url: rpcUrl,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }
       })
       .filter(notUndefined),
-  })
+  )
 
-  const consts: Record<string, Partial<Network>> = {
+  const consts = {
     ethereum: {
       axelarGatewayAddress: '0x4F4495243837681061C4743b74B3eEdf548D56A5',
       axelarId: 'ethereum',
@@ -147,24 +156,22 @@ async function seed() {
       logoUrl:
         'https://assets.coingecko.com/asset_platforms/images/135/standard/linea.jpeg?1706606705',
     },
-  } as const
+  } as const satisfies Record<string, Partial<NetworkRecord>>
 
-  await db.$transaction(
-    Object.entries(consts).map(([coingeckoId, consts]) =>
-      db.network.update({
-        where: {
-          coingeckoId,
-        },
-        data: {
-          ...consts,
-        },
-      }),
-    ),
-  )
+  await db.transaction(async () => {
+    for (const [coingeckoId, data] of Object.entries(consts)) {
+      const network = await db.networks.findByCoingeckoId(coingeckoId)
+      assert(network, `Network ${coingeckoId} not found`)
+      await db.networks.updateByCoingeckoId(coingeckoId, {
+        ...network,
+        ...data,
+      })
+    }
+  })
 
   console.log(`Database seeded with ${desiredNetworks.length} networks ✅`)
-  await db.networkExplorer.createMany({
-    data: allNetworks
+  await db.networkExplorer.insertMany(
+    allNetworks
       .map((network) => {
         const networkSlug = network.name
           .toLowerCase()
@@ -195,11 +202,17 @@ async function seed() {
           url: explorerUrl,
           apiKey: explorerApiKey,
           type: explorerType,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }
       })
       .filter(notUndefined),
-  })
+  )
 }
+
+/*
+
+TODO(piotradamczyk): I'm not really sure if we should attempt to truncate the DB in a script, especially in a monorepo.
 
 async function resetDb() {
   const dbUrl = new URL(env.DATABASE_URL)
@@ -215,9 +228,10 @@ async function resetDb() {
 
   console.log('Database emptied ✅')
 }
+  */
 
-const db = createPrismaClient()
+const db = createDatabase()
 
-await resetDb()
+// await resetDb()
 await seed()
-db.$disconnect()
+db.close()

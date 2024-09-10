@@ -1,4 +1,4 @@
-import { Logger, assert } from '@l2beat/backend-tools'
+import { Logger } from '@l2beat/backend-tools'
 import { z } from 'zod'
 
 import { nanoid } from 'nanoid'
@@ -30,21 +30,16 @@ export function buildAxelarConfigSource({ logger, db, queue }: Dependencies) {
 
     logger.info('Upserting bridge info')
 
-    const { id: externalBridgeId } = await db.externalBridge.upsert({
-      select: { id: true },
-      where: {
-        type: 'Axelar',
-      },
-      create: {
-        id: nanoid(),
-        name: 'Axelar',
-        type: 'Axelar',
-      },
-      update: {},
+    const externalBridgeId = await db.externalBridge.upsert({
+      id: nanoid(),
+      name: 'Axelar',
+      type: 'Axelar',
+      createdAt: new Date(),
+      updatedAt: new Date(),
     })
 
-    const networks = await db.network
-      .findMany({
+    const networks = await db.networks
+      .get({
         include: {
           rpcs: true,
         },
@@ -128,6 +123,11 @@ export function buildAxelarConfigSource({ logger, db, queue }: Dependencies) {
         externalId: sourceToken.fullDenomPath,
         symbol: sourceToken.assetSymbol,
         name: sourceToken.assetName,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        decimals: null,
+        logoUrl: null,
+        contractName: null,
       })
 
       tokenIds.add(sourceTokenId)
@@ -156,6 +156,11 @@ export function buildAxelarConfigSource({ logger, db, queue }: Dependencies) {
           externalId: token.fullDenomPath,
           symbol: token.assetSymbol,
           name: token.assetName,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          decimals: null,
+          logoUrl: null,
+          contractName: null,
         })
 
         tokenIds.add(targetTokenId)

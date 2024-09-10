@@ -1,9 +1,21 @@
+import { assert } from '@l2beat/shared-pure'
 import { BaseRepository } from '../../BaseRepository'
 import { TokenRecord, toRecord, toRow } from './entity'
 import { joinDeployment, joinNetwork, joinTokenMeta } from './join'
 import { selectToken, selectTokenWithPrefix } from './select'
 
 export class TokenRepository extends BaseRepository {
+  async upsert(record: TokenRecord): Promise<string> {
+    const row = toRow(record)
+    const result = await this.db
+      .insertInto('Token')
+      .values(row)
+      .onConflict((b) => b.columns(['networkId', 'address']).doUpdateSet(row))
+      .returning('Token.id')
+      .executeTakeFirst()
+    assert(result, 'Failed to upsert token')
+    return result.id
+  }
   async upsertMany(records: TokenRecord[]): Promise<number> {
     if (records.length === 0) return 0
 
@@ -22,6 +34,11 @@ export class TokenRepository extends BaseRepository {
         .execute()
     })
     return records.length
+  }
+
+  async getAll(): Promise<TokenRecord[]> {
+    const rows = await this.db.selectFrom('Token').select(selectToken).execute()
+    return rows.map(toRecord)
   }
 
   async getByChainId(chainId: number): Promise<TokenRecord[]> {

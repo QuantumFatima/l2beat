@@ -21,7 +21,7 @@ export function buildOrbitSource({ logger, db, queue }: Dependencies) {
   return async () => {
     logger.info(`Syncing tokens from Orbit...`)
 
-    const networks = await db.network
+    const networks = await db.networks
       .findMany({
         include: {
           rpcs: true,
