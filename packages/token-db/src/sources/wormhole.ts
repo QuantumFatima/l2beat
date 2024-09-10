@@ -8,7 +8,6 @@ import { upsertTokenWithMeta } from '../db/helpers.js'
 import { env } from '../env.js'
 import { Database } from '@l2beat/database'
 import { TokenUpdateQueue } from '../utils/queue/wrap.js'
-import { assert } from '@l2beat/shared-pure'
 
 type Dependencies = {
   logger: Logger
@@ -21,42 +20,23 @@ export function buildWormholeSource({ logger, db, queue }: Dependencies) {
 
   return async () => {
     logger.info(`Syncing tokens from Wormhole...`)
-    const networks = await db.network
-      .findMany({
-        include: {
-          rpcs: true,
-        },
-        where: {
-          wormholeId: {
-            not: null,
-          },
-        },
-      })
-      .then((result) =>
-        result.map((r) => {
-          const { wormholeId } = r
-          assert(wormholeId, 'Expected wormholeId')
-          return {
-            ...r,
-            wormholeId,
-          }
-        }),
-      )
+    const networks = await db.networks.getAllWithConfigs().then((networks) =>
+      networks
+        .filter((n) => n.wormholeId)
+        .map((n) => ({
+          ...n,
+          wormholeId: n.wormholeId as string,
+        })),
+    )
 
     logger.info('Upserting bridge info')
 
-    const { id: externalBridgeId } = await db.externalBridge.upsert({
-      select: { id: true },
-      where: {
-        name: 'Wormhole',
-        type: 'Wormhole',
-      },
-      create: {
-        id: nanoid(),
-        name: 'Wormhole',
-        type: 'Wormhole',
-      },
-      update: {},
+    const externalBridgeId = await db.externalBridge.upsert({
+      id: nanoid(),
+      name: 'Wormhole',
+      type: 'Wormhole',
+      updatedAt: new Date(),
+      createdAt: new Date(),
     })
 
     const res = await fetch(env.WORMHOLE_LIST_URL)
@@ -112,6 +92,10 @@ export function buildWormholeSource({ logger, db, queue }: Dependencies) {
         symbol: token.symbol,
         name: token.name,
         logoUrl: token.logo,
+        decimals: null,
+        contractName: null,
+        updatedAt: new Date(),
+        createdAt: new Date(),
       })
 
       tokenIds.add(sourceTokenId)
@@ -129,22 +113,24 @@ export function buildWormholeSource({ logger, db, queue }: Dependencies) {
             symbol: token.symbol,
             name: token.name,
             logoUrl: token.logo,
+            decimals: null,
+            contractName: null,
+            updatedAt: new Date(),
+            createdAt: new Date(),
           })
 
           tokenIds.add(targetTokenId)
 
-          await db.tokenBridge.upsert({
-            where: {
-              targetTokenId,
-            },
-            create: {
+          await db.tokenBridge.upsertMany([
+            {
               id: nanoid(),
               sourceTokenId,
               targetTokenId,
               externalBridgeId,
+              updatedAt: new Date(),
+              createdAt: new Date(),
             },
-            update: {},
-          })
+          ])
         }
       }
     }

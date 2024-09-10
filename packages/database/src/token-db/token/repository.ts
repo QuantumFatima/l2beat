@@ -85,7 +85,25 @@ export class TokenRepository extends BaseRepository {
     return rows.map(toRecord)
   }
 
-  async getByDeploymentTarget(target: {
+  async getByDeploymentSource(source: {
+    from: string[]
+    networkId: string
+  }): Promise<TokenRecord[]> {
+    const rows = await this.db
+      .selectFrom('Token')
+      .select(selectToken)
+      .innerJoin(...joinDeployment)
+      .innerJoin(...joinTokenMeta)
+      .innerJoin(...joinNetwork)
+      .where((eb) =>
+        eb.or(source.from.map((from) => eb('Deployment.from', 'ilike', from))),
+      )
+      .where('Network.id', '=', source.networkId)
+      .execute()
+    return rows.map(toRecord)
+  }
+
+  async getByDeploymentTargetAndContractName(target: {
     to: string[]
     networkId: string
     contractName: string
