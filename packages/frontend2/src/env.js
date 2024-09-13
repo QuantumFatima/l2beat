@@ -12,6 +12,7 @@ export const env = createEnv({
    * Server-only environment variables.
    */
   server: {
+    ANALYZE: coerceBoolean.default('false'),
     DATABASE_URL: z
       .string()
       .url()
@@ -45,6 +46,7 @@ export const env = createEnv({
    */
   runtimeEnv: {
     // Server
+    ANALYZE: process.env.ANALYZE,
     DATABASE_URL: process.env.DATABASE_URL,
     ETHEREUM_RPC_URL: process.env.ETHEREUM_RPC_URL,
     MOCK: process.env.MOCK,

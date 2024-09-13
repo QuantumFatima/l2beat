@@ -1,4 +1,5 @@
 import { withPlausibleProxy as createPlausibleProxyPlugin } from 'next-plausible'
+import createBundleAnalyzerPlugin from '@next/bundle-analyzer'
 import './src/env.js'
 
 /** @type {import('next').NextConfig} */
@@ -175,7 +176,12 @@ const nextConfig = {
 }
 
 function createNextConfig() {
-  const plugins = [createPlausibleProxyPlugin()]
+  const plugins = [
+    createPlausibleProxyPlugin(),
+    createBundleAnalyzerPlugin({
+      enabled: process.env.ANALYZE === 'true',
+    }),
+  ]
 
   return plugins.reduce((config, plugin) => plugin(config), nextConfig)
 }
